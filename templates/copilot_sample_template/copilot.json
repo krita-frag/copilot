@@ -1,0 +1,27 @@
+{
+  "project_title": "Hello World",
+  "description": "A sample project using Copilot",
+  "project_slug": "{{ project_title|slugify }}",
+  "author": "Alice",
+  "email": "alice@example.com",
+  "license": [
+    "MIT",
+    "Apache-2.0",
+    "GPL-3.0"
+  ],
+  "_copy_without_render": [
+    "tests/**"
+  ],
+  "language_code": {
+    "__prompt__": "Language",
+    "en": "English",
+    "de": "Deutsch"
+  },
+  "_extensions": [
+    "local_extensions.pascal_case",
+    "local_extensions.docker_image_prefix",
+    "local_extensions.latest_plone",
+    "local_extensions.locales_language_code",
+    "local_extensions.gs_language_code"
+  ]
+}

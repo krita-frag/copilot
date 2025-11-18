@@ -1,0 +1,6 @@
+[build]
+# Extra linker optimization flags for MSVC to reduce binary size
+rustflags = [
+    "-C", "link-arg=/OPT:REF",
+    "-C", "link-arg=/OPT:ICF",
+]

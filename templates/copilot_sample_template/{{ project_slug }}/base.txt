@@ -1,0 +1,6 @@
+# {{ project_slug }} Base
+
+Author: {{ author }}
+License: {{ license }}
+
+This is a plain MiniJinja template rendered without blocks.

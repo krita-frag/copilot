@@ -1,0 +1,11 @@
+Project {{ project_slug }}
+
+Author: {{ author }}
+{% if author == "LuaUser" %}
+This was set by hook.
+{% endif %}
+
+Features:
+{% for item in ["alpha", "beta", "gamma"] %}
+- {{ item }}
+{% endfor %}
