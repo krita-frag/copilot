@@ -1,82 +1,27 @@
-name: Cross-Compile Rust Binaries
+name: Cross-Platform Release
 
 on:
   push:
-    tags: ['v*']
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
-  cross-compile:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - x86_64-unknown-linux-musl
-          # Windows x86_64
-          - x86_64-pc-windows-msvc
-          # macOS x86_64
-          - x86_64-apple-darwin
-          - aarch64-apple-darwin
-
+        target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl, x86_64-apple-darwin]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Install cross-compilation dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y \
-            mingw-w64 \
-            musl-tools \
-            curl xz-utils
-
-      - name: Install macOS SDK (osxcross)
-        if: contains(matrix.target, 'apple-darwin')
-        uses: messense/macos-sdk-cross-toolchain@v1
-        with:
-          target: ${{ matrix.target }}
-
-      - name: Install Rust target
-        run: rustup target add ${{ matrix.target }}
-
-      - name: Configure Cargo for cross-compilation
-        run: |
-          mkdir -p .cargo
-          cat > .cargo/config.toml << EOF
-          [target.x86_64-pc-windows-msvc]
-          linker = "x86_64-w64-mingw32-gcc"
-          
-          [target.x86_64-apple-darwin]
-          linker = "x86_64-apple-darwin20.4-clang"
-          rustflags = ["-C", "link-arg=-Wl,--gc-sections", "-C", "link-arg=-Wl,--icf=all"]
-          
-          [target.aarch64-apple-darwin]
-          linker = "aarch64-apple-darwin20.4-clang"
-          rustflags = ["-C", "link-arg=-Wl,--gc-sections", "-C", "link-arg=-Wl,--icf=all"]
-          
-          [target.x86_64-unknown-linux-musl]
-          rustflags = ["-C", "link-arg=-Wl,--gc-sections", "-C", "link-arg=-Wl,--icf=all"]
-          EOF
-
-      - name: Cross-compile binary
-        run: cargo build --release --target ${{ matrix.target }} --locked
-
-      - name: Package binary
-        id: package
-        run: |
-          BIN_NAME="copilot"
-          if [[ "${{ matrix.target }}" == *windows* ]]; then
-            BIN_NAME+=".exe"
-            ARTIFACT="copilot-${{ github.ref_name }}-${{ matrix.target }}.zip"
-            zip -j "$ARTIFACT" "target/${{ matrix.target }}/release/$BIN_NAME"
-          else
-            ARTIFACT="copilot-${{ github.ref_name }}-${{ matrix.target }}.tar.gz"
-            tar -czf "$ARTIFACT" -C "target/${{ matrix.target }}/release" "$BIN_NAME"
-          fi
-          echo "artifact_path=$ARTIFACT" >> $GITHUB_OUTPUT
-
-      - name: Upload to GitHub Releases
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ steps.package.outputs.artifact_path }}
+      - uses: actions/checkout@master
+      - name: Compile and release
+        uses: rust-build/rust-build.action@v1.4.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          RUSTTARGET: ${{ matrix.target }}
+          EXTRA_FILES: "README.md LICENSE"
