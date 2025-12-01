@@ -1,9 +1,11 @@
 name: Deploy
 
 on:
+  on:
   push:
-    tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 permissions:
   contents: write
