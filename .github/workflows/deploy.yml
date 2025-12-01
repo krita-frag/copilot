@@ -60,6 +60,7 @@ jobs:
             fi
 
       - name: Build binary
+        shell: bash
         run: |
           if [[ "${{ matrix.target }}" == "x86_64-apple-darwin" || "${{ matrix.target }}" == "aarch64-apple-darwin" ]]; then
             export RUSTFLAGS="-C link-arg=-Wl,--gc-sections -C link-arg=-Wl,--icf=all"
