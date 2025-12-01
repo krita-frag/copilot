@@ -5,30 +5,28 @@ on:
     tags:
       - 'v*'
 
-# 定义多平台构建任务
 jobs:
   build:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             archive: zip
             binary_suffix: .exe
-
-          - os: macos-latest
+          - os: macos-12
             target: x86_64-apple-darwin
             archive: tar.gz
             binary_suffix: ''
-
-          - os: macos-latest
+          - os: macos-12
             target: aarch64-apple-darwin
             archive: tar.gz
             binary_suffix: ''
-
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
             archive: tar.gz
@@ -38,6 +36,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "rust-cache-${{ matrix.target }}"
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -45,13 +48,16 @@ jobs:
 
       - name: Install dependencies (Linux/macOS)
         if: matrix.os != 'windows-latest'
-        run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            sudo apt-get update && sudo apt-get install -y musl-tools
-          fi
-          if [[ "${{ matrix.target }}" == "aarch64-apple-darwin" ]]; then
-            rustup target add aarch64-apple-darwin
-          fi
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          command: |
+            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              sudo apt-get update && sudo apt-get install -y musl-tools
+            fi
+            if [[ "${{ matrix.target }}" == "aarch64-apple-darwin" ]]; then
+              rustup target add aarch64-apple-darwin
+            fi
 
       - name: Build binary
         run: |
@@ -65,10 +71,8 @@ jobs:
         run: |
           BINARY_NAME="copilot${{ matrix.binary_suffix }}"
           ARTIFACT_NAME="copilot-${{ github.ref_name }}-${{ matrix.target }}"
-          
           mkdir -p dist
           cp target/${{ matrix.target }}/release/$BINARY_NAME dist/
-          
           if [[ "${{ matrix.archive }}" == "zip" ]]; then
             cd dist && zip $ARTIFACT_NAME.zip $BINARY_NAME && cd ..
             echo "artifact_path=dist/$ARTIFACT_NAME.zip" >> $GITHUB_OUTPUT
