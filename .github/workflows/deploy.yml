@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  MACOSX_DEPLOYMENT_TARGET: "10.12"
+
 permissions:
   contents: write
 
